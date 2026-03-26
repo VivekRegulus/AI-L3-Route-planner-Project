@@ -18,7 +18,7 @@ class Graph:
         return self.edges.get(node, [])
 
     def rush_hour_factor(self,time):
-        hour = time%24
+        hour = time%24 #still have to make a time convertor function undecided where to put it right now
         minute = (time % 1)*60
         if hour >=18 or hour < 8 or hour == 13:
             return 1.0  # normal travel time during night hours and lunch hour
