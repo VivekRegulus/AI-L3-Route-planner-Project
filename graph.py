@@ -36,7 +36,4 @@ class Graph:
                 return normal_time * self.rush_hour_factor(current_time)
         return float('inf')
 
-    def euclidean_distance(self, u, v):
-        x1, y1 = self.coords[u]
-        x2, y2 = self.coords[v]
-        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
