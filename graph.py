@@ -21,12 +21,13 @@ class Graph:
         hour = int(time) % 24
         minute = int((time % 1) * 60)
         if hour >= 18 or hour < 8 or hour == 13:
-            return 1.0
+            return 1.0 # no rush at night
         if minute >= 0 and minute < 10:
-            return 1.2
+            return 1.2 # rush hour of just classes started
         if minute < 60 and minute >= 50:
-            return 1.5
+            return 1.5 # rush of hour of classes about to start and students exiting
         return 1.0
+        
 
     def travel_cost(self, u, v, current_time):
         for neighbour, distance, speed in self.edges.get(u, []):
