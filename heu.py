@@ -12,14 +12,13 @@ def get_remaining_targets(state, required, goal):
 def h1(state, graph, required, goal):
     current_node= state[0]
     targets = get_remaining_targets(state, required, goal)
-    if targets==0:
+    if not targets:   # we were comparing with ==0 but targets is a set so i changed to the correct check
         return 0.0
     maxtime=0.0
-    for i in targets:
-        
-        d=euclidean_distance(graph,current_node,i)/speed
-        if d/speed>maxtime:
-            maxtime=d/speed
+    for i in targets: # the outer for i loop was wrong so i removed it
+        d=euclidean_distance(graph,current_node,i)/speed  
+        if d>maxtime:
+            maxtime=d
     return maxtime
 def free_flow_weight(graph):
     if hasattr(graph, 'ff_weights'):
@@ -28,7 +27,6 @@ def free_flow_weight(graph):
     for u in graph.edges:
         for v, distance, speed in graph.edges[u]:
             ff[(u, v)] = distance / speed   
-
     graph.ff_weights = ff
     return ff
 def dijkstra(graph, source, ff):
@@ -37,20 +35,16 @@ def dijkstra(graph, source, ff):
         dist[node] = math.inf   
     dist[source] = 0.0
     a = [(0.0, source)]
-
     while a:
         d_u, u = heapq.heappop(a)
-
         if d_u > dist[u]:      
             continue
-
         for v, _dist, _speed in graph.edges.get(u, []):
             w   = ff.get((u, v), math.inf)
             alter = d_u + w
             if alter < dist[v]:
                 dist[v] = alter
                 heapq.heappush(a, (alter, v))
-
     return dist
 def precompute_sff(graph):
     ff_weights = free_flow_weight(graph)
@@ -58,23 +52,19 @@ def precompute_sff(graph):
     for u in graph.coords:
         sff[u] = dijkstra(graph, u, ff_weights)
     return sff
-
 def h2(state, graph, required, goal, sff):
     current_node= state[0]
     targets = get_remaining_targets(state, required, goal)
-    if targets==0:
+    if not targets:  # same as above
         return 0.0
     maxtime=0.0
     dist_from_v = sff.get(current_node, {})
-    for i in targets:
-        
-        for u in targets:
-         sff_vu = dist_from_v.get(u, math.inf)   
+    for u in targets:  # same as above
+        sff_vu = dist_from_v.get(u, math.inf)   
         if sff_vu > maxtime:
             maxtime = sff_vu
     return maxtime
 def verify_dominance(state, graph, required, goal, sff):
-
     h1_v = h1(state, graph, required, goal)
     h2_v = h2(state, graph, required, goal, sff)
     return h1_v, h2_v, (h2_v >= h1_v - 1e-8)
@@ -96,19 +86,16 @@ if __name__ == "__main__":
     required = frozenset({"Library", "Meera"})
     goal     = "MainGate"
     sff = precompute_sff(g)
-
     print("=== Free-flow shortest-path times from LHC ===")
     for node, t in sorted(sff["LHC"].items()):
         dist_equiv = t * 20.0
         print(f"  LHC → {node:<12}: {t:.4f} h  ({dist_equiv:.1f} m road distance)")
     print()
-
     tests = [
         ("LHC",      9.0,  frozenset(),                                "initial state"),
         ("Library",  10.0, frozenset({"Library"}),                     "Library visited"),
         ("MainGate", 12.0, frozenset({"Library","Meera","MainGate"}),  "goal state — all done"),
     ]
-
     for node, time, visited, label in tests:
         state = (node, time, visited)
         h1_val, h2_val, dom = verify_dominance(state, g, required, goal, sff)
