@@ -4,5 +4,8 @@
 
 # Python
 __pycache__/
+cache/*
 *.pyc
 *.pyo
+
+env/*

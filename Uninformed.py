@@ -1,105 +1,85 @@
+# Uninformed.py
 from collections import deque
-
 # I've implemented both BFS and DFS for Uninformed Search
 
-def _trace_back(came_from, goal_state):
-    path = []
-    s = goal_state
+def _tbu(cf,g_st):
+    # changed name to avoid conflict if I merge files later
+    p=[]; s=g_st
     while s is not None:
-        path.append(s[0])  # sirf node name chahiye
-        s = came_from.get(s)
-    path.reverse()  # ulta tha since we are appending at the end
-    return path
+        p.append(s[0]) # sirf node name chahiye
+        s=cf.get(s)
+    p.reverse() # ulta tha since we are appending at the end
+    return p
 
-
-def bfs(graph, start, goal, required_stops=None, start_time=8.0):
-    if required_stops is None:
-        required_stops = set()
-    required_stops = frozenset(required_stops)  # frozenset isliye ki hashed ho sake state mein
-
+def bfs(gr,st,gl,rq_s=None,st_t=8.0):
+    if rq_s is None: rq_s=set()
+    # frozenset isliye ki hashed ho sake state mein
+    req=frozenset(rq_s)
     # agar start node khud ek required stop hai toh use already visited consider kro
-    init_visited = frozenset({start} & required_stops)
-    init_state = (start, start_time, init_visited)
+    iv=frozenset({st}&req)
+    is_t=(st,st_t,iv)
 
-    frontier = deque([init_state])
-    explored = {(start, init_visited)}  # ignoring time here
-    came_from = {init_state: None}
-    nodes_expanded = 0
-    exploration_order = [] 
+    q=deque()
+    q.append(is_t)
+    
+    vs_s={(st,iv)} # ignoring time here; only (node, visited_stops) matters for dedup
+    p_map={is_t:None}
+    nxp=0; e_ord=[]
 
-    while frontier:
-        state = frontier.popleft() 
-        node, time, visited = state
-        nodes_expanded += 1
-        exploration_order.append(node)
+    while q:
+        cs=q.popleft()
+        n,t,v=cs
+        nxp+=1; e_ord.append(n)
 
         # goal check 
-        if node == goal and required_stops <= visited:
-            return {
-                "path": _trace_back(came_from, state),
-                "total_time": time - start_time,
-                "nodes_expanded": nodes_expanded,
-                "exploration_order": exploration_order,
-            }
+        if n==gl and req<=v:
+            return {"path":_tbu(p_map,cs),"total_time":t-st_t,"nodes_expanded":nxp,"exploration_order":e_ord}
 
-        for neighbor, dist, spd in graph.get_neighbors(node):
-            t_cost = graph.travel_cost(node, neighbor, time)
-            new_time = time + t_cost
-            new_visited = visited | (frozenset({neighbor}) & required_stops)
-            new_state = (neighbor, new_time, new_visited)
-            key = (neighbor, new_visited)
-
-            if key not in explored:
-                explored.add(key)
-                came_from[new_state] = state
-                frontier.append(new_state)
+        # neighbors
+        for nb,d,s in gr.get_nbrs(n):
+            cst=gr.tcst(n,nb,t); nt=t+cst
+            nv=v|(frozenset({nb})&req)
+            nst=(nb,nt,nv); kk=(nb,nv)
+            if kk not in vs_s:
+                vs_s.add(kk)
+                p_map[nst]=cs; q.append(nst)
 
     # no path exists
     return None
 
+# TODO: DFS can blow up memory on dense graphs; consider iterative deepening if needed
+def dfs(gr,st,gl,rq_s=None,st_t=8.0):
+    # just in case
+    if rq_s==None: rq_s=set()
+    r2=frozenset(rq_s)
+    
+    sv=frozenset({st}&r2); s0=(st,st_t,sv)
+    stk=[s0]; sn=set(); cf={s0:None}
+    xp=0; hst=[]
 
-def dfs(graph, start, goal, required_stops=None, start_time=8.0):
-    if required_stops is None:
-        required_stops = set()
-    required_stops = frozenset(required_stops)
-
-    init_visited = frozenset({start} & required_stops)
-    init_state = (start, start_time, init_visited)
-
-    frontier = [init_state]
-    explored = set()
-    came_from = {init_state: None}
-    nodes_expanded = 0
-    exploration_order = []
-
-    while frontier:
-        state = frontier.pop() 
-        node, time, visited = state
-        key = (node, visited)
+    while stk:
+        tmp=stk.pop() 
+        _n,_t,_v=tmp; k2=(_n,_v)
 
         # cycle detection to prevent infinite loops
-        if key in explored:
-            continue
-        explored.add(key)
-        nodes_expanded += 1
-        exploration_order.append(node)
+        if k2 in sn: continue
+        sn.add(k2)
+        xp+=1; hst.append(_n)
 
-        if node == goal and required_stops <= visited:
-            return {
-                "path": _trace_back(came_from, state),
-                "total_time": time - start_time,
-                "nodes_expanded": nodes_expanded,
-                "exploration_order": exploration_order,
-            }
+        if _n==gl and r2<=_v:
+            rd={}
+            rd["path"]=_tbu(cf,tmp)
+            rd["total_time"]=_t-st_t
+            rd["nodes_expanded"]=xp
+            rd["exploration_order"]=hst
+            return rd
 
-        for neighbor, dist, spd in graph.get_neighbors(node):
-            t_cost = graph.travel_cost(node, neighbor, time)
-            new_time = time + t_cost
-            new_visited = visited | (frozenset({neighbor}) & required_stops)
-            new_state = (neighbor, new_time, new_visited)
-
-            if (neighbor, new_visited) not in explored:
-                came_from[new_state] = state
-                frontier.append(new_state)
+        # this is a bit messy but whatever
+        for na,du,su in gr.get_nbrs(_n):
+            ti=gr.tcst(_n,na,_t); ntm=_t+ti
+            nvs=_v|(frozenset({na})&r2)
+            nst=(na,ntm,nvs)
+            if (na,nvs) not in sn:
+                cf[nst]=tmp; stk.append(nst)
 
     return None
