@@ -15,7 +15,7 @@ Main.py - loads osm data, builds the graph from the osm data and runs the search
 graph.py - graph data structure<br>
 uninformed.py - bfs and dfs search algorithm implementation<br>
 informed.py - greedy and a-star search algorithm implementation<br>
-heu.py - heuristic function implementation<br>
+heuristics.py - heuristic function implementation<br>
 visualier.py - plotting the output on matplotlib to see the search algoirthms in working and its output<br>
 
 **Setup Instructions**<br>
