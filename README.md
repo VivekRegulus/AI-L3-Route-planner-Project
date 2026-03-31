@@ -22,4 +22,4 @@ visualier.py - plotting the output on matplotlib to see the search algoirthms in
 1. git clone https://github.com/VivekRegulus/AI-L3-Route-planner-Project.git
 cd AI-L3-Route-planner-Project
 2. **Install dependencies** : pip install osmnx matplotlib networkx
-3.
+3. Set your goal, start and way points and run the search algorithms.
