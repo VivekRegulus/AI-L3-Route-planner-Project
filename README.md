@@ -1,5 +1,5 @@
 # AI-L3-Route-planner-Project
-CS F407 Assignment
+CS F407 Assignment <br>
 **Overview** <br>
 We have built a walking route planner of the BITS Pilani Campus modeling it as a weighted graph.<br>
 It implements optional waypoint criteria as well as time dependent weight calculation.<br>
