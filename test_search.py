@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from graph import Graph
-from search import bfs, dfs
+from uninformed import bfs, dfs
 
 
 def make_test_graph():

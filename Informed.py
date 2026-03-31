@@ -2,125 +2,114 @@ import heapq
 
 # I've implemented Greedy and A* for Informed Search
 
-def _trace_back(came_from, goal_state):
-    path = []
-    s = goal_state
+def _tb(cf,g_st):
+    p=[]
+    s=g_st
+    # loop till root
     while s is not None:
-        path.append(s[0])
-        s = came_from.get(s)
-    path.reverse()
-    return path
+        p.append(s[0])
+        s=cf.get(s)
+    p.reverse()
+    return p
 
+def greedy(gr,st,gl,h_f,rq_s=None,st_t=8.0):
+    if rq_s is None: rq_s=set()
+    req=frozenset(rq_s)
+    i_v=frozenset({st}&req)
+    s0=(st,st_t,i_v)
 
-def greedy(graph, start, goal, heuristic_fn, required_stops=None, start_time=8.0):
-    if required_stops is None:
-        required_stops = set()
-    required_stops = frozenset(required_stops)
-
-    init_visited = frozenset({start} & required_stops)
-    init_state = (start, start_time, init_visited)
-
-    h0 = heuristic_fn(init_state)
+    h0=h_f(s0)
     # heap state -> (h_value, counter, state)
     # counter isliye ki when two states are equal, their comparison doesn't crash
-    frontier = [(h0, 0, init_state)]
-    explored = set()
-    came_from = {init_state: None}
-    nodes_expanded = 0
-    counter = 1  # tiebreaker
-    exploration_order = []
+    fr=[(h0,0,s0)]
+    expl=set()
+    cf={s0:None}
+    nxp=0; cnt=1  # tiebreaker
+    ordr=[]
 
-    while frontier:
-        _, _, state = heapq.heappop(frontier)  # get the lowest one
-        node, time, visited = state
-        key = (node, visited)
+    while fr:
+        _,_,cs=heapq.heappop(fr)  # get the lowest one
+        nd,tv,vs=cs
+        kk=(nd,vs)
 
         # delete lazily
-        if key in explored:
-            continue
-        explored.add(key)
-        nodes_expanded += 1
-        exploration_order.append(node)
+        if kk in expl: continue
+        expl.add(kk)
+        
+        nxp+=1
+        ordr.append(nd)
 
-        if node == goal and required_stops <= visited:
-            return {
-                "path": _trace_back(came_from, state),
-                "total_time": time - start_time,
-                "nodes_expanded": nodes_expanded,
-                "exploration_order": exploration_order,
-            }
+        # check if we reached goal with all stops
+        if nd==gl and req<=vs:
+            # inline traceback just for greedy to see if it's faster
+            p=[]
+            cur=cs
+            while cur:
+                p.append(cur[0])
+                cur=cf.get(cur)
+            p.reverse()
+            return {"path":p,"total_time":tv-st_t,"nodes_expanded":nxp,"exploration_order":ordr}
 
-        for neighbor, dist, spd in graph.get_neighbors(node):
-            t_cost = graph.travel_cost(node, neighbor, time)
-            new_time = time + t_cost
-            new_visited = visited | (frozenset({neighbor}) & required_stops)
-            new_state = (neighbor, new_time, new_visited)
+        for nb,d,sp in gr.get_nbrs(nd):
+            tc=gr.tcst(nd,nb,tv)
+            nt=tv+tc
+            nv=vs|(frozenset({nb})&req) # intermediate visited
+            nst=(nb,nt,nv)
 
-            if (neighbor, new_visited) not in explored:
-                came_from[new_state] = state
-                h = heuristic_fn(new_state) 
-                heapq.heappush(frontier, (h, counter, new_state))
-                counter += 1
-
+            if (nb,nv) not in expl:
+                cf[nst]=cs
+                hv=h_f(nst) 
+                heapq.heappush(fr,(hv,cnt,nst))
+                cnt+=1
     return None
 
-
-def astar(graph, start, goal, heuristic_fn, required_stops=None, start_time=8.0):
-    if required_stops is None:
-        required_stops = set()
-    required_stops = frozenset(required_stops)
-
-    init_visited = frozenset({start} & required_stops)
-    init_state = (start, start_time, init_visited)
+def astar(gr,st,gl,h_f,rq_s=None,st_t=8.0):
+    if rq_s is None: rq_s=set()
+    req=frozenset(rq_s)
+    iv=frozenset({st}&req)
+    s0=(st,st_t,iv)
 
     # g_costs is the best known cost till now
-    g_costs = {(start, init_visited): 0.0}
-    h0 = heuristic_fn(init_state)
-    frontier = [(h0, 0, init_state)]  # f = g + h; g is 0 at 0, so its h0
-    explored = set()
-    came_from = {init_state: None}
-    nodes_expanded = 0
-    counter = 1
-    exploration_order = []
+    gc={(st,iv):0.0}
+    h0=h_f(s0)
+    fr=[(h0,0,s0)]  # f = g + h; g is 0 at 0, so its h0
+    ex=set()
+    cf={s0:None}
+    nxp=0; cnt=1; ordr=[]
 
-    while frontier:
-        _, _, state = heapq.heappop(frontier)  # sabse kam f(n) wala node
-        node, time, visited = state
-        key = (node, visited)
+    while len(fr)>0:
+        _f,_c,cs=heapq.heappop(fr)  # sabse kam f(n) wala node
+        nd,tv,vs=cs
+        kk=(nd,vs)
 
         # no rexapansion is already seen
-        if key in explored:
-            continue
-        explored.add(key)
-        nodes_expanded += 1
-        exploration_order.append(node)
+        if kk in ex: continue
+        ex.add(kk)
+        nxp+=1; ordr.append(nd)
 
         # goal check 
-        if node == goal and required_stops <= visited:
-            return {
-                "path": _trace_back(came_from, state),
-                "total_time": time - start_time,
-                "nodes_expanded": nodes_expanded,
-                "exploration_order": exploration_order,
-            }
+        if nd==gl:
+            if req<=vs:
+                return {"path":_tb(cf,cs),"total_time":tv-st_t,"nodes_expanded":nxp,"exploration_order":ordr}
 
-        g_now = g_costs.get(key, float('inf'))  # best g value of the current node
+        gnw=gc.get(kk,float('inf'))  # best g value of the current node
 
-        for neighbor, dist, spd in graph.get_neighbors(node):
-            t_cost = graph.travel_cost(node, neighbor, time)
-            new_time = time + t_cost
-            new_visited = visited | (frozenset({neighbor}) & required_stops)
-            new_state = (neighbor, new_time, new_visited)
-            new_key = (neighbor, new_visited)
-
-            new_g = g_now + t_cost
+        nl=gr.get_nbrs(nd)
+        for i in range(len(nl)):
+            nb,d,sp=nl[i]
+            tc=gr.tcst(nd,nb,tv)
+            nt=tv+tc
+            nv=vs|(frozenset({nb})&req)
+            nst=(nb,nt,nv); nk=(nb,nv)
+            ng=gnw+tc
 
             # only update if we get a better path to the neighbour
-            if new_key not in explored and new_g < g_costs.get(new_key, float('inf')):
-                g_costs[new_key] = new_g
-                came_from[new_state] = state
-                h = heuristic_fn(new_state)
-                heapq.heappush(frontier, (new_g + h, counter, new_state))  
-                counter += 1
-
+            og=gc.get(nk,float('inf'))
+            if nk not in ex and ng<og:
+                gc[nk]=ng
+                cf[nst]=cs
+                h=h_f(nst)
+                fn=ng+h
+                heapq.heappush(fr,(fn,cnt,nst))  
+                cnt+=1
     return None
